@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Chotot Assignment</title>
+        <!--Include js and css-->
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+        <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+        <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+        <style>
+            div[id^="item"] { width: 150px; height: 150px; padding: 0.5em; overflow: hidden; border: 1px solid black;}
+            div[id^="item"] img {
+                width: 100%;
+            }
+        </style>
+        <script>
+            $(function() {
+                // create websocket client
+                var connection,
+                connection = 
+                    new WebSocket("ws://"+window.location.hostname+":8081");
+                
+                // open connection
+                connection.onopen = function () {
+                    console.log("Connection opened")
+                    
+                    // get data to restAPI, draw list ads and set position
+                    $.get('http://localhost:3000/test', function (data) {
+                        
+                        // draw list ads
+                        var wrapperElem = $('#containment-wrapper');
+                        $.each(data.data, function (d, val) {
+                            var htmlTmp = '<div id="' + val.id + '">' +
+                                '<img src="' + val.image + '" title="' + val.title + '"/>'+
+                                '</div>';
+                            wrapperElem.append(htmlTmp);
+                        })
+                        
+                        // set position for ads
+                        var positions = data.position;
+                        $.each(positions, function (id, pos) {
+                            $("#" + id).css(pos);
+                        })
+                        
+                        
+                        //create event dragg and send new position to server
+                        $("#containment-wrapper div").draggable({
+                            scroll: false,
+                            stop: function (event, ui) {
+                                positions[this.id] = ui.position;
+                                data.position = positions;
+                                connection.send(JSON.stringify(data));
+                            }
+                        });
+                    });
+                    
+                }
+                
+                // close websocket
+                connection.onclose = function () {
+                    console.log("Connection closed")
+                }
+                
+                // websocket error
+                connection.onerror = function () {
+                    console.error("Connection error")
+                }
+                
+                // listen message from websocket server and set new position
+                connection.onmessage = function (event) {
+                    var data = event.data;
+                    if (data.indexOf('{') >= 0) {
+                        data = JSON.parse(data);
+                        $.each(data.position, function (id, pos) {
+                            $("#" + id).css(pos);
+                        })
+                    }
+                }
+            });
+
+        </script>
+    </head>
+    <body>
+        <div id="containment-wrapper">
+        </div>
+    </body>
+</html>
