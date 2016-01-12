@@ -1,4 +1,4 @@
-# ChototAssignment2
+# ChototAssignment
 ## How to run this app
 1. Install nodejs and mongodb
 2. Start mongodb
